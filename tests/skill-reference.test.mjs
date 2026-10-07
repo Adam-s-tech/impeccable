@@ -80,6 +80,10 @@ describe('skill reference authoring contracts', () => {
     assert.match(visualDecisionPage, /first reply/);
     assert.match(visualDecisionPage, /exit code 2 from starting it/);
     assert.match(visualDecisionPage, /wait check before starting/);
+    // Codex's exec_command returns a still-running --wait as a pollable session;
+    // that is not a harness that backgrounds the command away (astra/sol, 2026-10-04).
+    assert.match(visualDecisionPage, /session you can poll holds the wait/);
+    assert.match(visualDecisionPage, /rerun `--wait` only after it exits without an answer/);
     assert.doesNotMatch(
       visualDecisionPage,
       /only exit code 2 from starting it routes the decision to the structured tool; that exit is the fallback/,
@@ -106,6 +110,22 @@ describe('skill reference authoring contracts', () => {
     assert.match(edgeCases, /\*\*Interrupted gestures\*\*[\s\S]*works without a reload/);
     assert.match(edgeCases, /clear the dragging state and release capture/);
     assert.match(verifyHardening, /\*\*Interrupted gestures\*\*/);
+  });
+
+  it('keeps audit score-table dimensions aligned with their numbered sections', () => {
+    for (const filename of ['audit.md', 'audit.native.md']) {
+      const audit = readFileSync(join(ROOT, `skill/reference/${filename}`), 'utf-8').replace(/\r\n?/g, '\n');
+      const sections = [...audit.matchAll(/^### ([1-5])\. (.+?)(?: \([^\n]+\))?$/gm)].map((match) => [
+        match[1],
+        match[2],
+      ]);
+      const scores = [...audit.matchAll(/^\| ([1-5]) \| ([^|]+?) \|/gm)].map((match) => [
+        match[1],
+        match[2].trim(),
+      ]);
+
+      assert.deepEqual(scores, sections, filename);
+    }
   });
 });
 
